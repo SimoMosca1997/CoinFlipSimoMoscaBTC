@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>CoinFlip Game</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
+</head>
+<body>
+<h1>CoinFlip Game</h1>
+
+<h2>Step 1: Approva Token</h2>
+<input id="approveAmount" placeholder="Quantità token da approvare">
+<button onclick="approveToken()">Approve</button>
+<div id="approveStatus"></div>
+
+<h2>Step 2: Gioca CoinFlip</h2>
+<input id="betAmount" placeholder="Quantità token da scommettere">
+<br><br>
+<button onclick="placeBet(true)">Testa</button>
+<button onclick="placeBet(false)">Croce</button>
+<div id="betStatus"></div>
+
+<script>
+// Inserisci qui i tuoi indirizzi
+const tokenAddress = "0xb7bE2D327D40e9dD8658e25aaE23e6EA3832cC39"; // Il tuo token
+const contractAddress = "0x7ADAC670587ED92389a2BC7E8E2b51F993fb9771"; // Il tuo CoinFlip
+
+// ABI minimo per ERC20 approve
+const tokenAbi = [
+  "function approve(address spender, uint256 amount) public returns (bool)"
+];
+
+// ABI minimo per CoinFlip placeBet
+const coinFlipAbi = [
+  "function placeBet(uint256 amount, bool choice) public returns (bytes32)"
+];
+
+// Funzione Approve
+async function approveToken() {
+  try {
+    const amountInput = document.getElementById("approveAmount").value;
+    if (!amountInput) return alert("Inserisci un importo valido");
+
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+    const signer = provider.getSigner();
+
+    const tokenContract = new ethers.Contract(tokenAddress, tokenAbi, signer);
+    const amount = ethers.utils.parseUnits(amountInput, 18);
+
+    const tx = await tokenContract.approve(contractAddress, amount);
+    document.getElementById("approveStatus").innerText = "Transazione inviata! Tx: " + tx.hash;
+
+    await tx.wait();
+    document.getElementById("approveStatus").innerText = "Approve completato!";
+  } catch (err) {
+    console.error(err);
+    alert("Errore: " + (err.message || err));
+  }
+}
+
+// Funzione Gioca CoinFlip
+async function placeBet(choice) {
+  try {
+    const amountInput = document.getElementById("betAmount").value;
+    if (!amountInput) return alert("Inserisci un importo valido");
+
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+    const signer = provider.getSigner();
+
+    const contract = new ethers.Contract(contractAddress, coinFlipAbi, signer);
+    const amount = ethers.utils.parseUnits(amountInput, 18);
+
+    const tx = await contract.placeBet(amount, choice);
+    document.getElementById("betStatus").innerText = "Scommessa inviata! Tx: " + tx.hash;
+
+    await tx.wait();
+    document.getElementById("betStatus").innerText = "Scommessa completata! Controlla il risultato sul contratto.";
+  } catch (err) {
+    console.error(err);
+    alert("Errore: " + (err.message || err));
+  }
+}
+</script>
+</body>
+</html>
